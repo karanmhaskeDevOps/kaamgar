@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaamgar — Verified Local Labour, On Demand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#16223B;
+    --navy-2:#1E2E4F;
+    --yellow:#F2B705;
+    --yellow-dim:#D9A400;
+    --rust:#C1502E;
+    --concrete:#8B8680;
+    --cream:#FAF7F0;
+    --paper:#F1EDE3;
+    --ink:#16223B;
+    --line: rgba(22,34,59,0.12);
+    --good:#2E7D4F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:'Barlow Condensed', sans-serif; text-transform:uppercase; letter-spacing:0.01em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+  ::selection{background:var(--yellow); color:var(--navy);}
+  :focus-visible{outline:3px solid var(--rust); outline-offset:2px;}
+
+  /* ===== TOP TICKER ===== */
+  .ticker{
+    background:var(--navy); color:var(--yellow); font-family:'IBM Plex Mono', monospace;
+    font-size:12px; letter-spacing:0.08em; padding:7px 0; overflow:hidden; white-space:nowrap;
+  }
+  .ticker span{display:inline-block; padding-left:100%; animation: scroll 28s linear infinite;}
+  @keyframes scroll{ 0%{transform:translateX(0);} 100%{transform:translateX(-100%);} }
+
+  /* ===== HEADER ===== */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:var(--cream);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex; align-items:center; justify-content:space-between; padding:16px 28px;}
+  .logo{display:flex; align-items:center; gap:10px;}
+  .logo-mark{
+    width:34px; height:34px; background:var(--navy); border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--yellow); font-family:'Barlow Condensed'; font-weight:800; font-size:20px;
+    transform:rotate(-2deg);
+  }
+  .logo-text{font-family:'Barlow Condensed'; font-weight:700; font-size:24px; letter-spacing:0.02em;}
+  .logo-text small{display:block; font-family:'Inter'; text-transform:none; font-size:10px; font-weight:600; letter-spacing:0.1em; color:var(--concrete); margin-top:-4px;}
+  nav.links{display:flex; gap:32px; font-size:14px; font-weight:600;}
+  nav.links a{text-decoration:none; opacity:0.75; transition:opacity 0.15s;}
+  nav.links a:hover{opacity:1;}
+  .nav-right{display:flex; align-items:center; gap:14px;}
+  select.lang{
+    font-family:'Inter'; font-size:13px; font-weight:600; padding:8px 10px;
+    border:1px solid var(--line); border-radius:6px; background:var(--paper); color:var(--ink);
+  }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Inter'; font-weight:700; font-size:14px;
+    padding:11px 20px; border-radius:6px; border:none; cursor:pointer;
+    text-decoration:none; transition:transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--yellow); color:var(--navy); box-shadow:0 2px 0 var(--yellow-dim);}
+  .btn-primary:hover{box-shadow:0 4px 0 var(--yellow-dim);}
+  .btn-dark{background:var(--navy); color:var(--cream);}
+  .btn-outline{background:transparent; color:var(--navy); border:1.5px solid var(--navy);}
+
+  /* ===== HERO ===== */
+  .hero{
+    background:var(--navy); color:var(--cream); position:relative; overflow:hidden;
+    padding:64px 0 0;
+  }
+  .hero::before{
+    content:''; position:absolute; inset:0;
+    background-image: repeating-linear-gradient(135deg, rgba(242,183,5,0.05) 0px, rgba(242,183,5,0.05) 2px, transparent 2px, transparent 22px);
+    pointer-events:none;
+  }
+  .hero-inner{position:relative; display:grid; grid-template-columns:1.1fr 1fr; gap:56px; align-items:start;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--yellow); background:rgba(242,183,5,0.1); border:1px solid rgba(242,183,5,0.3);
+    padding:6px 12px; border-radius:100px; margin-bottom:22px;
+  }
+  .eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--yellow); box-shadow:0 0 0 3px rgba(242,183,5,0.25);}
+  h1{
+    font-family:'Barlow Condensed'; font-weight:800; font-size:clamp(40px, 5.4vw, 68px);
+    line-height:0.98; text-transform:uppercase; letter-spacing:0.005em; margin-bottom:22px;
+  }
+  h1 em{font-style:normal; color:var(--yellow);}
+  .hero-sub{font-size:17px; color:rgba(250,247,240,0.78); max-width:480px; margin-bottom:32px;}
+  .hero-ctas{display:flex; gap:14px; margin-bottom:40px; flex-wrap:wrap;}
+  .stat-row{display:flex; gap:36px; padding-top:28px; border-top:1px solid rgba(250,247,240,0.15);}
+  .stat b{font-family:'Barlow Condensed'; font-size:30px; font-weight:700; display:block; color:var(--yellow);}
+  .stat span{font-size:12px; color:rgba(250,247,240,0.6); text-transform:uppercase; letter-spacing:0.05em;}
+
+  /* ===== ESTIMATOR (signature element) ===== */
+  .ticket{
+    background:var(--cream); color:var(--ink); border-radius:10px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
+    overflow:hidden; position:relative; margin-bottom:-1px;
+  }
+  .ticket-head{
+    background:var(--paper); padding:16px 22px; display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px dashed var(--line);
+  }
+  .ticket-head b{font-family:'Barlow Condensed'; font-size:18px; letter-spacing:0.03em;}
+  .ticket-head .dot-row span{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--concrete); margin-left:5px; opacity:0.4;}
+  .ticket-body{padding:24px 22px;}
+  .ticket-body label{font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--concrete); display:block; margin-bottom:8px;}
+  #jobInput{
+    width:100%; border:1.5px solid var(--line); border-radius:8px; padding:13px 14px;
+    font-family:'Inter'; font-size:14.5px; resize:none; height:64px; color:var(--ink); background:#fff;
+  }
+  #jobInput:focus{border-color:var(--navy);}
+  .quick-tags{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 16px;}
+  .quick-tags button{
+    font-family:'Inter'; font-size:12px; font-weight:600; background:var(--paper); border:1px solid var(--line);
+    border-radius:100px; padding:6px 12px; cursor:pointer; color:var(--ink);
+  }
+  .quick-tags button:hover{background:var(--yellow); border-color:var(--yellow-dim);}
+  #estimateBtn{width:100%; justify-content:center; font-size:14px; padding:13px;}
+  .estimate-out{
+    margin-top:18px; border-top:1px dashed var(--line); padding-top:18px; display:none;
+  }
+  .estimate-out.show{display:block; animation:fadeUp 0.35s ease;}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+  .estimate-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; font-size:14px;}
+  .estimate-row + .estimate-row{border-top:1px solid var(--line);}
+  .estimate-row .k{color:var(--concrete); font-size:12.5px; text-transform:uppercase; letter-spacing:0.04em; font-family:'IBM Plex Mono';}
+  .estimate-row .v{font-weight:700;}
+  .estimate-price{
+    display:flex; justify-content:space-between; align-items:center; margin-top:14px;
+    background:var(--navy); color:var(--cream); padding:14px 16px; border-radius:8px;
+  }
+  .estimate-price .v{font-family:'Barlow Condensed'; font-size:26px; color:var(--yellow); font-weight:700;}
+  .estimate-price .k{color:rgba(250,247,240,0.7); font-size:12px;}
+
+  /* ===== SECTION SCAFFOLD ===== */
+  section{padding:88px 0;}
+  .section-head{max-width:600px; margin-bottom:52px;}
+  .kicker{
+    font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--rust); display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .kicker::before{content:''; width:22px; height:2px; background:var(--rust);}
+  h2{font-family:'Barlow Condensed'; font-weight:800; font-size:clamp(30px,3.4vw,42px); text-transform:uppercase; line-height:1.02;}
+  .section-head p{margin-top:14px; color:var(--concrete); font-size:16px; max-width:520px;}
+
+  /* HOW IT WORKS */
+  .how-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:1px solid var(--line); border-left:1px solid var(--line);}
+  .how-card{padding:28px 24px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); position:relative;}
+  .how-num{font-family:'Barlow Condensed'; font-size:15px; color:var(--rust); font-weight:700; margin-bottom:16px;}
+  .how-card h3{font-family:'Barlow Condensed'; font-size:21px; text-transform:uppercase; margin-bottom:8px; font-weight:700;}
+  .how-card p{font-size:14px; color:var(--concrete);}
+
+  /* WORKERS BROWSE */
+  .browse-bg{background:var(--paper);}
+  .filter-row{display:flex; gap:10px; margin-bottom:32px; flex-wrap:wrap;}
+  .filter-pill{
+    font-family:'Inter'; font-weight:600; font-size:13px; padding:8px 16px; border-radius:100px;
+    background:#fff; border:1px solid var(--line); cursor:pointer;
+  }
+  .filter-pill.active{background:var(--navy); color:var(--cream); border-color:var(--navy);}
+  .worker-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  .worker-card{
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; position:relative;
+    transition:box-shadow 0.15s, transform 0.15s;
+  }
+  .worker-card:hover{box-shadow:0 14px 28px -14px rgba(22,34,59,0.25); transform:translateY(-2px);}
+  .worker-top{display:flex; gap:12px; align-items:center; margin-bottom:14px;}
+  .avatar{
+    width:48px; height:48px; border-radius:8px; background:var(--navy); color:var(--yellow);
+    display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed'; font-weight:700; font-size:19px;
+  }
+  .worker-name{font-weight:700; font-size:15px;}
+  .worker-role{font-size:12.5px; color:var(--concrete);}
+  .verified-badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700;
+    color:var(--good); background:rgba(46,125,79,0.1); padding:3px 8px; border-radius:100px; margin-top:4px;
+  }
+  .worker-meta{display:flex; justify-content:space-between; font-size:12.5px; color:var(--concrete); margin:14px 0; padding-top:14px; border-top:1px solid var(--line);}
+  .worker-meta b{color:var(--ink); font-family:'Barlow Condensed'; font-size:16px; display:block;}
+  .worker-card .btn{width:100%; justify-content:center; font-size:13px; padding:10px;}
+
+  /* TRUST SECTION */
+  .trust-grid{display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;}
+  .trust-steps{list-style:none;}
+  .trust-steps li{display:flex; gap:16px; padding:18px 0; border-bottom:1px solid var(--line);}
+  .trust-steps li:first-child{padding-top:0;}
+  .trust-icon{
+    width:38px; height:38px; border-radius:8px; background:var(--navy); color:var(--yellow); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed'; font-weight:700;
+  }
+  .trust-steps h4{font-size:15px; font-weight:700; margin-bottom:3px;}
+  .trust-steps p{font-size:13.5px; color:var(--concrete);}
+  .trust-visual{
+    background:var(--navy); border-radius:14px; padding:36px; color:var(--cream); position:relative; overflow:hidden;
+  }
+  .id-card{background:var(--cream); color:var(--ink); border-radius:10px; padding:20px; margin-bottom:14px;}
+  .id-card-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .id-card-top span{font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase; color:var(--concrete); letter-spacing:0.06em;}
+  .id-status{background:var(--good); color:#fff; font-size:10px; font-weight:700; padding:3px 9px; border-radius:100px;}
+  .id-row{display:flex; justify-content:space-between; font-size:12.5px; padding:6px 0; border-top:1px dashed var(--line);}
+  .id-row .k{color:var(--concrete);}
+  .id-row .v{font-weight:700;}
+
+  /* PRICING / DIFFERENTIATION */
+  .compare{background:var(--navy); color:var(--cream); border-radius:16px; padding:48px; display:grid; grid-template-columns:1fr 1fr; gap:0;}
+  .compare-col{padding:28px;}
+  .compare-col + .compare-col{border-left:1px solid rgba(250,247,240,0.15);}
+  .compare-col h3{font-family:'Barlow Condensed'; text-transform:uppercase; font-size:22px; margin-bottom:18px;}
+  .compare-col .price{font-family:'Barlow Condensed'; font-size:44px; font-weight:700; margin-bottom:6px;}
+  .compare-col.us .price{color:var(--yellow);}
+  .compare-col.them .price{color:rgba(250,247,240,0.5); text-decoration:line-through; text-decoration-color:var(--rust);}
+  .compare-col p{font-size:13px; color:rgba(250,247,240,0.65);}
+  .compare-col ul{list-style:none; margin-top:16px;}
+  .compare-col li{font-size:13.5px; padding:6px 0; display:flex; gap:8px;}
+
+  /* WORKER CTA */
+  .worker-cta{
+    background:linear-gradient(135deg, var(--rust), #A8431F); color:var(--cream);
+    border-radius:16px; padding:56px; display:flex; justify-content:space-between; align-items:center; gap:40px;
+  }
+  .worker-cta h2{color:var(--cream); margin-bottom:12px;}
+  .worker-cta p{color:rgba(250,247,240,0.85); max-width:420px; font-size:15px;}
+  .worker-cta .btn-primary{background:var(--cream); color:var(--rust); box-shadow:0 2px 0 rgba(0,0,0,0.15);}
+
+  /* FOOTER */
+  footer{background:var(--navy); color:rgba(250,247,240,0.6); padding:56px 0 28px; font-size:13px;}
+  .foot-grid{display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:40px; padding-bottom:36px; border-bottom:1px solid rgba(250,247,240,0.12);}
+  .foot-grid h5{color:var(--cream); font-family:'Barlow Condensed'; text-transform:uppercase; font-size:14px; margin-bottom:14px; letter-spacing:0.04em;}
+  .foot-grid a{display:block; text-decoration:none; padding:5px 0; color:rgba(250,247,240,0.6);}
+  .foot-bottom{display:flex; justify-content:space-between; padding-top:22px; flex-wrap:wrap; gap:10px;}
+
+  /* ===== INLINE FORMS (dispatch confirm, worker apply) ===== */
+  .inline-form{display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);}
+  .inline-form.show{display:block; animation:fadeUp 0.3s ease;}
+  .inline-form input, .inline-form select{
+    width:100%; border:1.5px solid var(--line); border-radius:8px; padding:11px 13px;
+    font-family:'Inter'; font-size:14px; color:var(--ink); background:#fff; margin-bottom:10px;
+  }
+  .inline-form input:focus, .inline-form select:focus{border-color:var(--navy);}
+  .form-msg{font-size:13px; font-weight:600; padding:10px 12px; border-radius:6px; margin-top:10px; display:none;}
+  .form-msg.show{display:block;}
+  .form-msg.ok{background:rgba(46,125,79,0.1); color:var(--good);}
+  .form-msg.err{background:rgba(193,80,46,0.1); color:var(--rust);}
+  .worker-cta-form{margin-top:22px; max-width:340px;}
+  .worker-cta-form input, .worker-cta-form select{
+    width:100%; border:1.5px solid rgba(250,247,240,0.35); border-radius:8px; padding:12px 14px;
+    font-family:'Inter'; font-size:14px; color:var(--cream); background:rgba(0,0,0,0.15); margin-bottom:10px;
+  }
+  .worker-cta-form input::placeholder{color:rgba(250,247,240,0.5);}
+  .worker-cta-form input:focus, .worker-cta-form select:focus{border-color:var(--cream); outline:none;}
+  .worker-cta-form select option{color:#111;}
+  .loading-text{color:var(--concrete); font-size:14px; padding:20px 0;}
+
+  @media (max-width:900px){
+    nav.links{display:none;}
+    .hero-inner{grid-template-columns:1fr;}
+    .how-grid{grid-template-columns:repeat(2,1fr);}
+    .worker-grid{grid-template-columns:1fr;}
+    .trust-grid{grid-template-columns:1fr;}
+    .compare{grid-template-columns:1fr;}
+    .compare-col + .compare-col{border-left:none; border-top:1px solid rgba(250,247,240,0.15);}
+    .foot-grid{grid-template-columns:1fr 1fr;}
+    .worker-cta{flex-direction:column; align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker"><span>NOW LIVE: BENGALURU · DELHI NCR · MUMBAI &nbsp;&nbsp;·&nbsp;&nbsp; 4,200+ VERIFIED WORKERS ON PLATFORM &nbsp;&nbsp;·&nbsp;&nbsp; SAME-DAY DISPATCH IN MOST AREAS &nbsp;&nbsp;·&nbsp;&nbsp; ZERO BROKER COMMISSION FOR WORKERS &nbsp;&nbsp;·&nbsp;&nbsp; NOW LIVE: BENGALURU · DELHI NCR · MUMBAI</span></div>
+
+<header>
+  <div class="nav wrap">
+    <div class="logo">
+      <div class="logo-mark">K</div>
+      <div class="logo-text">KAAMGAR<small>Verified local labour</small></div>
+    </div>
+    <nav class="links">
+      <a href="#estimate">Post a Job</a>
+      <a href="#workers">Find Workers</a>
+      <a href="#trust">Verification</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#worker-cta">Work With Us</a>
+    </nav>
+    <div class="nav-right">
+      <select class="lang" aria-label="Choose language">
+        <option>English</option>
+        <option>हिंदी</option>
+        <option>ಕನ್ನಡ</option>
+        <option>मराठी</option>
+        <option>தமிழ்</option>
+        <option>বাংলা</option>
+      </select>
+      <a href="#estimate" class="btn btn-dark">Get Started</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div style="padding:56px 0 64px;">
+      <div class="eyebrow">Unorganised labour, organised</div>
+      <h1>Skip the<br>middleman. <em>Hire<br>verified,&nbsp;local.</em></h1>
+      <p class="hero-sub">Describe the job in your own words. We work out how many people and what equipment you need, then send verified local workers to your door — at the actual local rate, not an app markup.</p>
+      <div class="hero-ctas">
+        <a href="#estimate" class="btn btn-primary">Post a job free →</a>
+        <a href="#worker-cta" class="btn btn-outline" style="border-color:rgba(250,247,240,0.4); color:var(--cream);">I'm a worker, hire me</a>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><b>4,200+</b><span>Verified workers</span></div>
+        <div class="stat"><b>3</b><span>Cities live</span></div>
+        <div class="stat"><b>0%</b><span>Broker cut for workers</span></div>
+        <div class="stat"><b>&lt;24h</b><span>Avg. dispatch time</span></div>
+      </div>
+    </div>
+
+    <div id="estimate" style="padding-top:56px;">
+      <div class="ticket">
+        <div class="ticket-head">
+          <b>Job Estimator</b>
+          <div class="dot-row"><span></span><span></span><span></span></div>
+        </div>
+        <div class="ticket-body">
+          <label>Tell us what you need done</label>
+          <textarea id="jobInput" placeholder="e.g. I need to dig a 2 metre hole in my backyard for a septic tank"></textarea>
+          <div class="quick-tags">
+            <button type="button" onclick="fillJob('Dig a 2 metre hole in the backyard')">🕳️ Dig a hole</button>
+            <button type="button" onclick="fillJob('Paint two bedrooms and a hallway')">🎨 Paint rooms</button>
+            <button type="button" onclick="fillJob('Move furniture from a 2BHK to a new flat')">📦 Home shifting</button>
+            <button type="button" onclick="fillJob('Fix a leaking kitchen tap and pipe')">🔧 Plumbing fix</button>
+          </div>
+          <button class="btn btn-primary" id="estimateBtn" onclick="runEstimate()">Get instant estimate</button>
+
+          <div class="estimate-out" id="estimateOut">
+            <div class="estimate-row"><span class="k">Category</span><span class="v" id="outCat">—</span></div>
+            <div class="estimate-row"><span class="k">Workers needed</span><span class="v" id="outWorkers">—</span></div>
+            <div class="estimate-row"><span class="k">Equipment sent</span><span class="v" id="outEquip">—</span></div>
+            <div class="estimate-row"><span class="k">Estimated time</span><span class="v" id="outTime">—</span></div>
+            <div class="estimate-price">
+              <div><div class="k">Local market rate</div><div class="v" id="outPrice">—</div></div>
+              <button type="button" class="btn btn-primary" style="padding:10px 18px;" onclick="toggleDispatchForm()">Confirm & dispatch</button>
+            </div>
+
+            <form class="inline-form" id="dispatchForm" onsubmit="submitJobRequest(event)">
+              <label style="display:block; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--concrete); margin-bottom:10px;">Your details, so we can confirm & dispatch</label>
+              <input type="text" id="custName" placeholder="Your name" required>
+              <input type="tel" id="custPhone" placeholder="Phone number" required>
+              <select id="custCity" required>
+                <option value="">Select your city</option>
+                <option>Bengaluru</option>
+                <option>Mumbai</option>
+                <option>Delhi NCR</option>
+              </select>
+              <button type="submit" class="btn btn-dark" style="width:100%; justify-content:center;" id="dispatchSubmitBtn">Submit request</button>
+              <div class="form-msg" id="dispatchMsg"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">The flow</div>
+      <h2>You describe the problem.<br>We handle the logistics.</h2>
+      <p>You shouldn't need to know how many labourers a job takes, or what tools it needs. That's our job, not yours.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">01</div>
+        <h3>Describe</h3>
+        <p>Type your job in plain language — no categories to guess, no forms to fill.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02</div>
+        <h3>We scope it</h3>
+        <p>Our team sizes the job — headcount, skills, and equipment — and shows you the plan upfront.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03</div>
+        <h3>You confirm</h3>
+        <p>See the local-rate price before anything is booked. Pay in-app, or pay on completion.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">04</div>
+        <h3>We dispatch</h3>
+        <p>Verified workers and equipment arrive at your location, on the agreed time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="browse-bg" id="workers">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Browse nearby</div>
+      <h2>Verified workers near you</h2>
+      <p>Every profile below has passed in-person verification at a Kaamgar office — ID, address, and skill check.</p>
+    </div>
+    <div class="filter-row">
+      <button class="filter-pill active">All</button>
+      <button class="filter-pill">Construction</button>
+      <button class="filter-pill">Electrical</button>
+      <button class="filter-pill">Plumbing</button>
+      <button class="filter-pill">Painting</button>
+      <button class="filter-pill">Domestic help</button>
+      <button class="filter-pill">Moving</button>
+    </div>
+    <div class="worker-grid" id="workerGrid">
+      <div class="loading-text">Loading verified workers…</div>
+    </div>
+  </div>
+</section>
+
+<section id="trust">
+  <div class="wrap trust-grid">
+    <div>
+      <div class="kicker">Trust & verification</div>
+      <h2 style="margin-bottom:26px;">No online sign-up.<br>Every worker meets us in person.</h2>
+      <ul class="trust-steps">
+        <li>
+          <div class="trust-icon">1</div>
+          <div><h4>In-office registration</h4><p>Every worker visits a Kaamgar office in person — no self-signup, no fake profiles.</p></div>
+        </li>
+        <li>
+          <div class="trust-icon">2</div>
+          <div><h4>ID & address check</h4><p>Government ID and address verified by our staff before a profile goes live.</p></div>
+        </li>
+        <li>
+          <div class="trust-icon">3</div>
+          <div><h4>Skill documentation</h4><p>Trade certificates checked where they exist; skills otherwise assessed on-site by our team.</p></div>
+        </li>
+        <li>
+          <div class="trust-icon">4</div>
+          <div><h4>Rights & fair-pay briefing</h4><p>Workers are briefed on their rights on the platform and our fair-pay policy before onboarding.</p></div>
+        </li>
+      </ul>
+    </div>
+    <div class="trust-visual">
+      <div class="id-card">
+        <div class="id-card-top"><span>Kaamgar Worker ID</span><span class="id-status">VERIFIED</span></div>
+        <div class="id-row"><span class="k">Name</span><span class="v">Ramesh Kumar</span></div>
+        <div class="id-row"><span class="k">Trade</span><span class="v">Mason</span></div>
+        <div class="id-row"><span class="k">ID checked</span><span class="v">Aadhaar ✓</span></div>
+        <div class="id-row"><span class="k">Office</span><span class="v">Bengaluru — Whitefield</span></div>
+        <div class="id-row"><span class="k">Verified on</span><span class="v">12 Mar 2026</span></div>
+      </div>
+      <p style="font-size:13px; color:rgba(250,247,240,0.6); padding:0 4px;">Every customer can see this card before confirming a booking — full transparency, no anonymous profiles.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Why we're different</div>
+      <h2>Local rate, not app-inflated rate</h2>
+      <p>Big platforms price for the customer who never checked the local rate. We show it to you upfront.</p>
+    </div>
+    <div class="compare">
+      <div class="compare-col us">
+        <h3>Kaamgar</h3>
+        <div class="price">₹700<span style="font-size:16px; color:rgba(250,247,240,0.6);">/day</span></div>
+        <p>Matches the actual local day-rate for a verified mason in your area.</p>
+        <ul>
+          <li>✓ Transparent local pricing</li>
+          <li>✓ Zero commission charged to workers</li>
+          <li>✓ Small platform fee shown upfront to customer</li>
+        </ul>
+      </div>
+      <div class="compare-col them">
+        <h3>Typical big platform</h3>
+        <div class="price">₹1,450<span style="font-size:16px; color:rgba(250,247,240,0.4);">/day</span></div>
+        <p>Bundled platform markup, standard nationwide pricing regardless of local rates.</p>
+        <ul style="color:rgba(250,247,240,0.5);">
+          <li>✕ Same price in every city</li>
+          <li>✕ Worker take-home reduced by high platform cut</li>
+          <li>✕ Worker must be platform-employed, not independent</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="worker-cta">
+  <div class="wrap">
+    <div class="worker-cta">
+      <div>
+        <h2>Skilled with your hands?<br>Get work directly, no middleman.</h2>
+        <p>Register at your nearest Kaamgar office. Keep 100% of what you earn — we don't take a cut from your daily wage, only a small fee from the customer.</p>
+      </div>
+      <div style="flex-shrink:0; min-width:300px;">
+        <button type="button" class="btn btn-primary" onclick="toggleWorkerForm()" id="workerCtaBtn">Register your interest →</button>
+        <form class="worker-cta-form inline-form" id="workerApplyForm" onsubmit="submitWorkerApplication(event)">
+          <input type="text" id="wName" placeholder="Your name" required>
+          <input type="tel" id="wPhone" placeholder="Phone number" required>
+          <select id="wTrade" required>
+            <option value="">Select your trade</option>
+            <option>Mason</option>
+            <option>Electrician</option>
+            <option>Plumber</option>
+            <option>Carpenter</option>
+            <option>Painter</option>
+            <option>Domestic help</option>
+            <option>General labour</option>
+          </select>
+          <select id="wCity" required>
+            <option value="">Select your city</option>
+            <option>Bengaluru</option>
+            <option>Mumbai</option>
+            <option>Delhi NCR</option>
+          </select>
+          <button type="submit" class="btn" style="background:var(--cream); color:var(--rust); width:100%; justify-content:center;">Submit — we'll invite you to an office</button>
+          <div class="form-msg" id="workerMsg"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="logo" style="margin-bottom:14px;">
+          <div class="logo-mark">K</div>
+          <div class="logo-text" style="color:var(--cream);">KAAMGAR</div>
+        </div>
+        <p style="max-width:260px; color:rgba(250,247,240,0.5);">Bringing India's unorganised labour market onto one trusted, verified platform — starting Tier 1, going everywhere.</p>
+      </div>
+      <div>
+        <h5>Customers</h5>
+        <a href="#estimate">Post a job</a>
+        <a href="#workers">Browse workers</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div>
+        <h5>Workers</h5>
+        <a href="#worker-cta">Register</a>
+        <a href="#trust">Verification process</a>
+        <a href="#">Worker rights</a>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <a href="#">About</a>
+        <a href="#">Cities we serve</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 Kaamgar. Concept demo — not a live service.</span>
+      <span>Made for Tier 1 → Tier 2 India launch</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ===== SUPABASE CONNECTION =====
+  const SUPABASE_URL = "https://vyxkeoujbwukdlzlaiad.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_RkjM59RJTjzI3fPlIWMk_g_jAcJXlYt";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // holds the most recent computed estimate, so we can save it when the customer confirms
+  let currentEstimate = null;
+
+  function fillJob(text){
+    document.getElementById('jobInput').value = text;
+  }
+
+  function runEstimate(){
+    const input = document.getElementById('jobInput').value.toLowerCase().trim();
+    const out = document.getElementById('estimateOut');
+    if(!input){
+      document.getElementById('jobInput').focus();
+      document.getElementById('jobInput').style.borderColor = 'var(--rust)';
+      setTimeout(()=> document.getElementById('jobInput').style.borderColor = '', 900);
+      return;
+    }
+
+    let cat, workers, equip, time, price;
+
+    if(input.includes('hole') || input.includes('dig') || input.includes('septic') || input.includes('excavat')){
+      cat = 'Excavation / Manual labour';
+      workers = '2 labourers';
+      equip = 'Spades, pickaxe, soil bags';
+      time = '3–4 hours';
+      price = '₹1,400';
+    } else if(input.includes('paint')){
+      cat = 'Painting';
+      workers = '2 painters';
+      equip = 'Rollers, brushes, drop sheets';
+      time = '1–2 days';
+      price = '₹2,800 + materials';
+    } else if(input.includes('move') || input.includes('shift') || input.includes('furniture')){
+      cat = 'Home shifting';
+      workers = '3 movers + 1 driver';
+      equip = 'Mini truck, packing materials';
+      time = 'Half day';
+      price = '₹3,200';
+    } else if(input.includes('tap') || input.includes('pipe') || input.includes('leak') || input.includes('plumb')){
+      cat = 'Plumbing repair';
+      workers = '1 plumber';
+      equip = 'Standard plumbing toolkit';
+      time = '1–2 hours';
+      price = '₹450';
+    } else if(input.includes('electric') || input.includes('wiring') || input.includes('fan') || input.includes('switch')){
+      cat = 'Electrical work';
+      workers = '1 electrician';
+      equip = 'Multimeter, wiring kit';
+      time = '1–3 hours';
+      price = '₹600';
+    } else if(input.includes('clean') || input.includes('maid') || input.includes('cook')){
+      cat = 'Domestic help';
+      workers = '1 domestic worker';
+      equip = 'Provided by household';
+      time = 'As scheduled';
+      price = '₹450/day';
+    } else {
+      cat = 'General labour (needs review)';
+      workers = '1–2 labourers (est.)';
+      equip = 'Basic toolkit';
+      time = 'Half day (est.)';
+      price = '₹800 (est.)';
+    }
+
+    document.getElementById('outCat').textContent = cat;
+    document.getElementById('outWorkers').textContent = workers;
+    document.getElementById('outEquip').textContent = equip;
+    document.getElementById('outTime').textContent = time;
+    document.getElementById('outPrice').textContent = price;
+    out.classList.add('show');
+
+    currentEstimate = { description: document.getElementById('jobInput').value.trim(), category: cat, workers, equip, price };
+    document.getElementById('dispatchForm').classList.remove('show');
+  }
+
+  // ===== JOB REQUEST SUBMISSION =====
+  function toggleDispatchForm(){
+    if(!currentEstimate){
+      runEstimate();
+      if(!currentEstimate) return;
+    }
+    document.getElementById('dispatchForm').classList.toggle('show');
+  }
+
+  async function submitJobRequest(e){
+    e.preventDefault();
+    const btn = document.getElementById('dispatchSubmitBtn');
+    const msg = document.getElementById('dispatchMsg');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+
+    const payload = {
+      customer_name: document.getElementById('custName').value.trim(),
+      customer_phone: document.getElementById('custPhone').value.trim(),
+      city: document.getElementById('custCity').value,
+      description: currentEstimate.description,
+      category: currentEstimate.category,
+      workers_needed: currentEstimate.workers,
+      equipment: currentEstimate.equip,
+      estimated_price: currentEstimate.price,
+    };
+
+    const { error } = await sb.from('job_requests').insert(payload);
+
+    btn.disabled = false; btn.textContent = 'Submit request';
+    msg.classList.remove('ok','err');
+    if(error){
+      msg.textContent = 'Something went wrong — please try again.';
+      msg.classList.add('err','show');
+      console.error(error);
+    } else {
+      msg.textContent = '✓ Request received — our team will confirm and dispatch within 24 hours.';
+      msg.classList.add('ok','show');
+      e.target.reset();
+    }
+  }
+
+  // ===== WORKER APPLICATION SUBMISSION =====
+  function toggleWorkerForm(){
+    document.getElementById('workerApplyForm').classList.toggle('show');
+  }
+
+  async function submitWorkerApplication(e){
+    e.preventDefault();
+    const msg = document.getElementById('workerMsg');
+
+    const payload = {
+      name: document.getElementById('wName').value.trim(),
+      phone: document.getElementById('wPhone').value.trim(),
+      trade: document.getElementById('wTrade').value,
+      city: document.getElementById('wCity').value,
+    };
+
+    const { error } = await sb.from('worker_applications').insert(payload);
+
+    msg.classList.remove('ok','err');
+    if(error){
+      msg.textContent = 'Something went wrong — please try again.';
+      msg.classList.add('err','show');
+      console.error(error);
+    } else {
+      msg.textContent = "✓ Thanks! We'll contact you to schedule your in-person verification.";
+      msg.classList.add('ok','show');
+      e.target.reset();
+    }
+  }
+
+  // ===== LOAD LIVE VERIFIED WORKERS =====
+  async function loadWorkers(){
+    const grid = document.getElementById('workerGrid');
+    const { data, error } = await sb
+      .from('workers')
+      .select('*')
+      .eq('verified', true)
+      .order('rating_avg', { ascending: false });
+
+    if(error || !data || data.length === 0){
+      grid.innerHTML = '<div class="loading-text">No verified workers yet — check back soon.</div>';
+      console.error(error);
+      return;
+    }
+
+    grid.innerHTML = data.map(w => {
+      const initials = w.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      return `
+        <div class="worker-card">
+          <div class="worker-top">
+            <div class="avatar">${initials}</div>
+            <div>
+              <div class="worker-name">${w.name}</div>
+              <div class="worker-role">${w.trade} · ${w.experience_years} yrs experience</div>
+              <div class="verified-badge">✓ ID + Skill Verified</div>
+            </div>
+          </div>
+          <div class="worker-meta">
+            <div><b>${w.rating_avg}★</b>Rating (${w.rating_count})</div>
+            <div><b>${w.area || w.city || '—'}</b>Area</div>
+            <div><b>₹${w.day_rate}</b>Per day</div>
+          </div>
+          <button class="btn btn-dark">View profile</button>
+        </div>`;
+    }).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', loadWorkers);
+
+  document.querySelectorAll('.filter-pill').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      document.querySelectorAll('.filter-pill').forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
