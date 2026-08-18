@@ -6,6 +6,7 @@
 <title>Kaamgar — Verified Local Labour, On Demand</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --navy:#16223B;
@@ -249,6 +250,28 @@
   .foot-grid a{display:block; text-decoration:none; padding:5px 0; color:rgba(250,247,240,0.6);}
   .foot-bottom{display:flex; justify-content:space-between; padding-top:22px; flex-wrap:wrap; gap:10px;}
 
+  /* ===== INLINE FORMS (dispatch confirm, worker apply) ===== */
+  .inline-form{display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);}
+  .inline-form.show{display:block; animation:fadeUp 0.3s ease;}
+  .inline-form input, .inline-form select{
+    width:100%; border:1.5px solid var(--line); border-radius:8px; padding:11px 13px;
+    font-family:'Inter'; font-size:14px; color:var(--ink); background:#fff; margin-bottom:10px;
+  }
+  .inline-form input:focus, .inline-form select:focus{border-color:var(--navy);}
+  .form-msg{font-size:13px; font-weight:600; padding:10px 12px; border-radius:6px; margin-top:10px; display:none;}
+  .form-msg.show{display:block;}
+  .form-msg.ok{background:rgba(46,125,79,0.1); color:var(--good);}
+  .form-msg.err{background:rgba(193,80,46,0.1); color:var(--rust);}
+  .worker-cta-form{margin-top:22px; max-width:340px;}
+  .worker-cta-form input, .worker-cta-form select{
+    width:100%; border:1.5px solid rgba(250,247,240,0.35); border-radius:8px; padding:12px 14px;
+    font-family:'Inter'; font-size:14px; color:var(--cream); background:rgba(0,0,0,0.15); margin-bottom:10px;
+  }
+  .worker-cta-form input::placeholder{color:rgba(250,247,240,0.5);}
+  .worker-cta-form input:focus, .worker-cta-form select:focus{border-color:var(--cream); outline:none;}
+  .worker-cta-form select option{color:#111;}
+  .loading-text{color:var(--concrete); font-size:14px; padding:20px 0;}
+
   @media (max-width:900px){
     nav.links{display:none;}
     .hero-inner{grid-template-columns:1fr;}
@@ -264,7 +287,7 @@
 </head>
 <body>
 
-<div class="ticker"><span>NOW LIVE: BENGALURU · DELHI NCR · MUMBAI &nbsp;&nbsp;·&nbsp;&nbsp; 4,200+ VERIFIED WORKERS ON PLATFORM &nbsp;&nbsp;·&nbsp;&nbsp; SAME-DAY DISPATCH IN MOST AREAS &nbsp;&nbsp;·&nbsp;&nbsp; ZERO BROKER COMMISSION FOR WORKERS &nbsp;&nbsp;·&nbsp;&nbsp; NOW LIVE: BENGALURU · DELHI NCR · MUMBAI</span></div>
+<div class="ticker"><span>NOW LIVE IN BENGALURU · EARLY ACCESS &nbsp;&nbsp;·&nbsp;&nbsp; ZERO BROKER COMMISSION FOR WORKERS &nbsp;&nbsp;·&nbsp;&nbsp; VERIFIED IN PERSON, EVERY WORKER &nbsp;&nbsp;·&nbsp;&nbsp; WORKERS: REGISTER NOW, BE FIRST ON THE PLATFORM &nbsp;&nbsp;·&nbsp;&nbsp; NOW LIVE IN BENGALURU · EARLY ACCESS</span></div>
 
 <header>
   <div class="nav wrap">
@@ -288,7 +311,12 @@
         <option>தமிழ்</option>
         <option>বাংলা</option>
       </select>
-      <a href="#estimate" class="btn btn-dark">Get Started</a>
+      <a href="#estimate" class="btn btn-dark" id="getStartedBtn">Get Started</a>
+      <a href="login.html" class="btn btn-outline" id="loginNavBtn">Log In</a>
+      <span id="accountNav" style="display:none; font-size:13px; font-weight:600; align-items:center; gap:10px;">
+        <span id="accountEmail"></span>
+        <a href="#" onclick="handleLogout(event)" style="color:var(--rust); text-decoration:none; font-weight:700;">Log Out</a>
+      </span>
     </div>
   </div>
 </header>
@@ -304,10 +332,10 @@
         <a href="#worker-cta" class="btn btn-outline" style="border-color:rgba(250,247,240,0.4); color:var(--cream);">I'm a worker, hire me</a>
       </div>
       <div class="stat-row">
-        <div class="stat"><b>4,200+</b><span>Verified workers</span></div>
-        <div class="stat"><b>3</b><span>Cities live</span></div>
+        <div class="stat"><b id="statWorkers">—</b><span>Verified workers</span></div>
+        <div class="stat"><b>1</b><span>City live (Bengaluru)</span></div>
         <div class="stat"><b>0%</b><span>Broker cut for workers</span></div>
-        <div class="stat"><b>&lt;24h</b><span>Avg. dispatch time</span></div>
+        <div class="stat"><b>Early Access</b><span>Now onboarding</span></div>
       </div>
     </div>
 
@@ -335,8 +363,22 @@
             <div class="estimate-row"><span class="k">Estimated time</span><span class="v" id="outTime">—</span></div>
             <div class="estimate-price">
               <div><div class="k">Local market rate</div><div class="v" id="outPrice">—</div></div>
-              <a href="#" class="btn btn-primary" style="padding:10px 18px;">Confirm & dispatch</a>
+              <button type="button" class="btn btn-primary" style="padding:10px 18px;" onclick="toggleDispatchForm()">Confirm & dispatch</button>
             </div>
+
+            <form class="inline-form" id="dispatchForm" onsubmit="submitJobRequest(event)">
+              <label style="display:block; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--concrete); margin-bottom:10px;">Your details, so we can confirm & dispatch</label>
+              <input type="text" id="custName" placeholder="Your name" required>
+              <input type="tel" id="custPhone" placeholder="Phone number" required>
+              <select id="custCity" required>
+                <option value="">Select your city</option>
+                <option>Bengaluru</option>
+                <option>Mumbai</option>
+                <option>Delhi NCR</option>
+              </select>
+              <button type="submit" class="btn btn-dark" style="width:100%; justify-content:center;" id="dispatchSubmitBtn">Submit request</button>
+              <div class="form-msg" id="dispatchMsg"></div>
+            </form>
           </div>
         </div>
       </div>
@@ -392,55 +434,8 @@
       <button class="filter-pill">Domestic help</button>
       <button class="filter-pill">Moving</button>
     </div>
-    <div class="worker-grid">
-      <div class="worker-card">
-        <div class="worker-top">
-          <div class="avatar">RK</div>
-          <div>
-            <div class="worker-name">Ramesh Kumar</div>
-            <div class="worker-role">Mason · 9 yrs experience</div>
-            <div class="verified-badge">✓ ID + Skill Verified</div>
-          </div>
-        </div>
-        <div class="worker-meta">
-          <div><b>4.8★</b>Rating (142)</div>
-          <div><b>1.2 km</b>Away</div>
-          <div><b>₹700</b>Per day</div>
-        </div>
-        <button class="btn btn-dark">View profile</button>
-      </div>
-      <div class="worker-card">
-        <div class="worker-top">
-          <div class="avatar">SP</div>
-          <div>
-            <div class="worker-name">Suresh Patil</div>
-            <div class="worker-role">Electrician · 6 yrs experience</div>
-            <div class="verified-badge">✓ ID + Skill Verified</div>
-          </div>
-        </div>
-        <div class="worker-meta">
-          <div><b>4.9★</b>Rating (98)</div>
-          <div><b>2.4 km</b>Away</div>
-          <div><b>₹900</b>Per day</div>
-        </div>
-        <button class="btn btn-dark">View profile</button>
-      </div>
-      <div class="worker-card">
-        <div class="worker-top">
-          <div class="avatar">AJ</div>
-          <div>
-            <div class="worker-name">Anita Joshi</div>
-            <div class="worker-role">Domestic help · 4 yrs experience</div>
-            <div class="verified-badge">✓ ID + Skill Verified</div>
-          </div>
-        </div>
-        <div class="worker-meta">
-          <div><b>4.7★</b>Rating (211)</div>
-          <div><b>0.8 km</b>Away</div>
-          <div><b>₹450</b>Per day</div>
-        </div>
-        <button class="btn btn-dark">View profile</button>
-      </div>
+    <div class="worker-grid" id="workerGrid">
+      <div class="loading-text">Loading verified workers…</div>
     </div>
   </div>
 </section>
@@ -522,10 +517,59 @@
         <h2>Skilled with your hands?<br>Get work directly, no middleman.</h2>
         <p>Register at your nearest Kaamgar office. Keep 100% of what you earn — we don't take a cut from your daily wage, only a small fee from the customer.</p>
       </div>
-      <a href="#" class="btn btn-primary" style="flex-shrink:0;">Find nearest office →</a>
+      <div style="flex-shrink:0; min-width:300px;">
+        <button type="button" class="btn btn-primary" onclick="toggleWorkerForm()" id="workerCtaBtn">Register your interest →</button>
+        <form class="worker-cta-form inline-form" id="workerApplyForm" onsubmit="submitWorkerApplication(event)">
+          <input type="text" id="wName" placeholder="Your name" required>
+          <input type="tel" id="wPhone" placeholder="Phone number" required>
+          <select id="wTrade" required>
+            <option value="">Select your trade</option>
+            <option>Mason</option>
+            <option>Electrician</option>
+            <option>Plumber</option>
+            <option>Carpenter</option>
+            <option>Painter</option>
+            <option>Domestic help</option>
+            <option>General labour</option>
+          </select>
+          <select id="wCity" required>
+            <option value="">Select your city</option>
+            <option>Bengaluru</option>
+            <option>Mumbai</option>
+            <option>Delhi NCR</option>
+          </select>
+          <button type="submit" class="btn" style="background:var(--cream); color:var(--rust); width:100%; justify-content:center;">Submit — we'll invite you to an office</button>
+          <div class="form-msg" id="workerMsg"></div>
+        </form>
+      </div>
     </div>
   </div>
 </section>
+
+<!-- HIRE MODAL -->
+<div id="hireModal" style="display:none; position:fixed; inset:0; background:rgba(22,34,59,0.6); z-index:100; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:14px; padding:32px; max-width:420px; width:100%;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;">
+      <div>
+        <div id="hireWorkerName" style="font-family:'Barlow Condensed'; font-weight:700; font-size:24px; color:var(--navy);"></div>
+        <div id="hireWorkerRole" style="color:var(--concrete); font-size:14px;"></div>
+      </div>
+      <button onclick="closeHireModal()" style="background:none; border:none; font-size:22px; cursor:pointer; color:var(--concrete);">×</button>
+    </div>
+    <form id="hireForm" onsubmit="submitHire(event)">
+      <label style="display:block; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--concrete); margin-bottom:8px;">What's the job?</label>
+      <textarea id="hireJobDesc" required style="width:100%; height:70px; border:1.5px solid var(--line); border-radius:8px; padding:12px; font-family:'Inter'; font-size:14px; resize:none; margin-bottom:12px;" placeholder="Briefly describe what you need done"></textarea>
+      <label style="display:block; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--concrete); margin-bottom:8px;">Preferred date</label>
+      <input type="date" id="hireDate" required style="width:100%; border:1.5px solid var(--line); border-radius:8px; padding:11px; font-family:'Inter'; font-size:14px; margin-bottom:16px;">
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;" id="hireSubmitBtn">Confirm Hire Request</button>
+      <div class="form-msg" id="hireMsg"></div>
+    </form>
+    <div id="hireLoginPrompt" style="display:none; text-align:center; padding:10px 0;">
+      <p style="font-size:14px; color:var(--concrete); margin-bottom:14px;">You need to log in to hire a worker.</p>
+      <a href="login.html" class="btn btn-dark" style="width:100%; justify-content:center;">Log In / Sign Up</a>
+    </div>
+  </div>
+</div>
 
 <footer>
   <div class="wrap">
@@ -554,6 +598,8 @@
         <a href="#">About</a>
         <a href="#">Cities we serve</a>
         <a href="#">Contact</a>
+        <a href="terms.html">Terms & Conditions</a>
+        <a href="privacy.html">Privacy Policy</a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -564,6 +610,14 @@
 </footer>
 
 <script>
+  // ===== SUPABASE CONNECTION =====
+  const SUPABASE_URL = "https://vyxkeoujbwukdlzlaiad.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_RkjM59RJTjzI3fPlIWMk_g_jAcJXlYt";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // holds the most recent computed estimate, so we can save it when the customer confirms
+  let currentEstimate = null;
+
   function fillJob(text){
     document.getElementById('jobInput').value = text;
   }
@@ -630,7 +684,193 @@
     document.getElementById('outTime').textContent = time;
     document.getElementById('outPrice').textContent = price;
     out.classList.add('show');
+
+    currentEstimate = { description: document.getElementById('jobInput').value.trim(), category: cat, workers, equip, price };
+    document.getElementById('dispatchForm').classList.remove('show');
   }
+
+  // ===== JOB REQUEST SUBMISSION =====
+  function toggleDispatchForm(){
+    if(!currentEstimate){
+      runEstimate();
+      if(!currentEstimate) return;
+    }
+    document.getElementById('dispatchForm').classList.toggle('show');
+  }
+
+  async function submitJobRequest(e){
+    e.preventDefault();
+    const btn = document.getElementById('dispatchSubmitBtn');
+    const msg = document.getElementById('dispatchMsg');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+
+    const payload = {
+      customer_name: document.getElementById('custName').value.trim(),
+      customer_phone: document.getElementById('custPhone').value.trim(),
+      city: document.getElementById('custCity').value,
+      description: currentEstimate.description,
+      category: currentEstimate.category,
+      workers_needed: currentEstimate.workers,
+      equipment: currentEstimate.equip,
+      estimated_price: currentEstimate.price,
+    };
+
+    const { error } = await sb.from('job_requests').insert(payload);
+
+    btn.disabled = false; btn.textContent = 'Submit request';
+    msg.classList.remove('ok','err');
+    if(error){
+      msg.textContent = 'Something went wrong — please try again.';
+      msg.classList.add('err','show');
+      console.error(error);
+    } else {
+      msg.textContent = '✓ Request received — our team will confirm and dispatch within 24 hours.';
+      msg.classList.add('ok','show');
+      e.target.reset();
+    }
+  }
+
+  // ===== WORKER APPLICATION SUBMISSION =====
+  function toggleWorkerForm(){
+    document.getElementById('workerApplyForm').classList.toggle('show');
+  }
+
+  async function submitWorkerApplication(e){
+    e.preventDefault();
+    const msg = document.getElementById('workerMsg');
+
+    const payload = {
+      name: document.getElementById('wName').value.trim(),
+      phone: document.getElementById('wPhone').value.trim(),
+      trade: document.getElementById('wTrade').value,
+      city: document.getElementById('wCity').value,
+    };
+
+    const { error } = await sb.from('worker_applications').insert(payload);
+
+    msg.classList.remove('ok','err');
+    if(error){
+      msg.textContent = 'Something went wrong — please try again.';
+      msg.classList.add('err','show');
+      console.error(error);
+    } else {
+      msg.textContent = "✓ Thanks! We'll contact you to schedule your in-person verification.";
+      msg.classList.add('ok','show');
+      e.target.reset();
+    }
+  }
+
+  // ===== LOAD LIVE VERIFIED WORKERS =====
+  let loadedWorkers = [];
+
+  async function loadWorkers(){
+    const grid = document.getElementById('workerGrid');
+    const { data, error } = await sb
+      .from('workers')
+      .select('*')
+      .eq('verified', true)
+      .order('rating_avg', { ascending: false });
+
+    if(error || !data || data.length === 0){
+      grid.innerHTML = '<div class="loading-text">No verified workers yet — check back soon.</div>';
+      document.getElementById('statWorkers').textContent = '0';
+      console.error(error);
+      return;
+    }
+
+    loadedWorkers = data;
+    document.getElementById('statWorkers').textContent = data.length;
+
+    grid.innerHTML = data.map((w, i) => {
+      const initials = w.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      return `
+        <div class="worker-card">
+          <div class="worker-top">
+            <div class="avatar">${initials}</div>
+            <div>
+              <div class="worker-name">${w.name}</div>
+              <div class="worker-role">${w.trade} · ${w.experience_years} yrs experience</div>
+              <div class="verified-badge">✓ ID + Skill Verified</div>
+            </div>
+          </div>
+          <div class="worker-meta">
+            <div><b>${w.rating_avg}★</b>Rating (${w.rating_count})</div>
+            <div><b>${w.area || w.city || '—'}</b>Area</div>
+            <div><b>₹${w.day_rate}</b>Per day</div>
+          </div>
+          <button class="btn btn-dark" onclick='openHireModal(loadedWorkers[${i}])'>Hire ${w.name.split(' ')[0]}</button>
+        </div>`;
+    }).join('');
+  }
+
+  // ===== AUTH SESSION STATE =====
+  let currentUser = null;
+
+  async function checkSession(){
+    const { data: { session } } = await sb.auth.getSession();
+    currentUser = session ? session.user : null;
+    document.getElementById('loginNavBtn').style.display = currentUser ? 'none' : 'inline-flex';
+    document.getElementById('accountNav').style.display = currentUser ? 'inline-flex' : 'none';
+    if(currentUser) document.getElementById('accountEmail').textContent = currentUser.email;
+  }
+
+  async function handleLogout(e){
+    e.preventDefault();
+    await sb.auth.signOut();
+    checkSession();
+  }
+
+  // ===== HIRE MODAL =====
+  let hireTargetWorker = null;
+
+  function openHireModal(worker){
+    hireTargetWorker = worker;
+    document.getElementById('hireWorkerName').textContent = worker.name;
+    document.getElementById('hireWorkerRole').textContent = `${worker.trade} · ₹${worker.day_rate}/day`;
+    document.getElementById('hireMsg').classList.remove('show','ok','err');
+    document.getElementById('hireForm').reset();
+
+    if(currentUser){
+      document.getElementById('hireForm').style.display = 'block';
+      document.getElementById('hireLoginPrompt').style.display = 'none';
+    } else {
+      document.getElementById('hireForm').style.display = 'none';
+      document.getElementById('hireLoginPrompt').style.display = 'block';
+    }
+    document.getElementById('hireModal').style.display = 'flex';
+  }
+
+  function closeHireModal(){
+    document.getElementById('hireModal').style.display = 'none';
+  }
+
+  async function submitHire(e){
+    e.preventDefault();
+    const btn = document.getElementById('hireSubmitBtn');
+    const msg = document.getElementById('hireMsg');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+
+    const { error } = await sb.from('bookings').insert({
+      customer_id: currentUser.id,
+      worker_id: hireTargetWorker.id,
+      job_description: document.getElementById('hireJobDesc').value.trim(),
+      scheduled_date: document.getElementById('hireDate').value,
+    });
+
+    btn.disabled = false; btn.textContent = 'Confirm Hire Request';
+    msg.classList.remove('ok','err');
+    if(error){
+      msg.textContent = 'Something went wrong — please try again.';
+      msg.classList.add('err','show');
+      console.error(error);
+    } else {
+      msg.textContent = `✓ Request sent to ${hireTargetWorker.name} — you'll be contacted to confirm.`;
+      msg.classList.add('ok','show');
+      setTimeout(closeHireModal, 2000);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { checkSession(); loadWorkers(); });
 
   document.querySelectorAll('.filter-pill').forEach(p=>{
     p.addEventListener('click', ()=>{
