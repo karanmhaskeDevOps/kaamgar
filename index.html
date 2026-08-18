@@ -426,13 +426,13 @@
       <p>Every profile below has passed in-person verification at a Kaamgar office — ID, address, and skill check.</p>
     </div>
     <div class="filter-row">
-      <button class="filter-pill active">All</button>
-      <button class="filter-pill">Construction</button>
-      <button class="filter-pill">Electrical</button>
-      <button class="filter-pill">Plumbing</button>
-      <button class="filter-pill">Painting</button>
-      <button class="filter-pill">Domestic help</button>
-      <button class="filter-pill">Moving</button>
+      <button class="filter-pill active" data-filter="All">All</button>
+      <button class="filter-pill" data-filter="Mason">Construction</button>
+      <button class="filter-pill" data-filter="Electrician">Electrical</button>
+      <button class="filter-pill" data-filter="Plumber">Plumbing</button>
+      <button class="filter-pill" data-filter="Painter">Painting</button>
+      <button class="filter-pill" data-filter="Domestic help">Domestic help</button>
+      <button class="filter-pill" data-filter="Mover">Moving</button>
     </div>
     <div class="worker-grid" id="workerGrid">
       <div class="loading-text">Loading verified workers…</div>
@@ -603,7 +603,7 @@
       </div>
     </div>
     <div class="foot-bottom">
-      <span>© 2026 Kaamgar. Concept demo — not a live service.</span>
+      <span>© 2026 Kaamgar. Live in Bengaluru — early access.</span>
       <span>Made for Tier 1 → Tier 2 India launch</span>
     </div>
   </div>
@@ -767,25 +767,14 @@
   // ===== LOAD LIVE VERIFIED WORKERS =====
   let loadedWorkers = [];
 
-  async function loadWorkers(){
+  function renderWorkers(list){
     const grid = document.getElementById('workerGrid');
-    const { data, error } = await sb
-      .from('workers')
-      .select('*')
-      .eq('verified', true)
-      .order('rating_avg', { ascending: false });
-
-    if(error || !data || data.length === 0){
+    if(!list || list.length === 0){
       grid.innerHTML = '<div class="loading-text">No verified workers yet — check back soon.</div>';
-      document.getElementById('statWorkers').textContent = '0';
-      console.error(error);
       return;
     }
-
-    loadedWorkers = data;
-    document.getElementById('statWorkers').textContent = data.length;
-
-    grid.innerHTML = data.map((w, i) => {
+    grid.innerHTML = list.map((w) => {
+      const i = loadedWorkers.indexOf(w);
       const initials = w.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
       return `
         <div class="worker-card">
@@ -805,6 +794,26 @@
           <button class="btn btn-dark" onclick='openHireModal(loadedWorkers[${i}])'>Hire ${w.name.split(' ')[0]}</button>
         </div>`;
     }).join('');
+  }
+
+  async function loadWorkers(){
+    const grid = document.getElementById('workerGrid');
+    const { data, error } = await sb
+      .from('workers')
+      .select('*')
+      .eq('verified', true)
+      .order('rating_avg', { ascending: false });
+
+    if(error || !data || data.length === 0){
+      grid.innerHTML = '<div class="loading-text">No verified workers yet — check back soon.</div>';
+      document.getElementById('statWorkers').textContent = '0';
+      console.error(error);
+      return;
+    }
+
+    loadedWorkers = data;
+    document.getElementById('statWorkers').textContent = data.length;
+    renderWorkers(loadedWorkers);
   }
 
   // ===== AUTH SESSION STATE =====
@@ -880,6 +889,17 @@
     p.addEventListener('click', ()=>{
       document.querySelectorAll('.filter-pill').forEach(x=>x.classList.remove('active'));
       p.classList.add('active');
+      const filter = p.dataset.filter;
+      const grid = document.getElementById('workerGrid');
+      if(filter === 'All'){
+        renderWorkers(loadedWorkers);
+      } else {
+        const filtered = loadedWorkers.filter(w => w.trade === filter);
+        renderWorkers(filtered);
+        if(filtered.length === 0){
+          grid.innerHTML = `<div class="loading-text">No verified ${filter} workers yet in this area.</div>`;
+        }
+      }
     });
   });
 </script>
