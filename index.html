@@ -622,9 +622,11 @@
     document.getElementById('jobInput').value = text;
   }
 
-  function runEstimate(){
-    const input = document.getElementById('jobInput').value.toLowerCase().trim();
+  async function runEstimate(){
+    const input = document.getElementById('jobInput').value.trim();
     const out = document.getElementById('estimateOut');
+    const btn = document.getElementById('estimateBtn');
+
     if(!input){
       document.getElementById('jobInput').focus();
       document.getElementById('jobInput').style.borderColor = 'var(--rust)';
@@ -632,51 +634,53 @@
       return;
     }
 
+    btn.disabled = true;
+    btn.textContent = 'Thinking…';
+
     let cat, workers, equip, time, price;
 
-    if(input.includes('hole') || input.includes('dig') || input.includes('septic') || input.includes('excavat')){
-      cat = 'Excavation / Manual labour';
-      workers = '2 labourers';
-      equip = 'Spades, pickaxe, soil bags';
-      time = '3–4 hours';
-      price = '₹1,400';
-    } else if(input.includes('paint')){
-      cat = 'Painting';
-      workers = '2 painters';
-      equip = 'Rollers, brushes, drop sheets';
-      time = '1–2 days';
-      price = '₹2,800 + materials';
-    } else if(input.includes('move') || input.includes('shift') || input.includes('furniture')){
-      cat = 'Home shifting';
-      workers = '3 movers + 1 driver';
-      equip = 'Mini truck, packing materials';
-      time = 'Half day';
-      price = '₹3,200';
-    } else if(input.includes('tap') || input.includes('pipe') || input.includes('leak') || input.includes('plumb')){
-      cat = 'Plumbing repair';
-      workers = '1 plumber';
-      equip = 'Standard plumbing toolkit';
-      time = '1–2 hours';
-      price = '₹450';
-    } else if(input.includes('electric') || input.includes('wiring') || input.includes('fan') || input.includes('switch')){
-      cat = 'Electrical work';
-      workers = '1 electrician';
-      equip = 'Multimeter, wiring kit';
-      time = '1–3 hours';
-      price = '₹600';
-    } else if(input.includes('clean') || input.includes('maid') || input.includes('cook')){
-      cat = 'Domestic help';
-      workers = '1 domestic worker';
-      equip = 'Provided by household';
-      time = 'As scheduled';
-      price = '₹450/day';
-    } else {
-      cat = 'General labour (needs review)';
-      workers = '1–2 labourers (est.)';
-      equip = 'Basic toolkit';
-      time = 'Half day (est.)';
-      price = '₹800 (est.)';
+    try{
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/categorize-job`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({ description: input }),
+      });
+
+      if(!res.ok) throw new Error('AI estimate failed');
+      const ai = await res.json();
+      if(ai.error) throw new Error(ai.error);
+
+      cat = ai.category;
+      workers = ai.workers_needed;
+      equip = ai.equipment;
+      time = ai.estimated_time;
+      price = ai.estimated_price_inr;
+    } catch(err){
+      console.warn('AI estimate unavailable, using offline fallback:', err);
+      // ----- Offline fallback (keyword-based) if the AI call fails for any reason -----
+      const low = input.toLowerCase();
+      if(low.includes('hole') || low.includes('dig') || low.includes('septic') || low.includes('excavat')){
+        cat = 'Excavation / Manual labour'; workers = '2 labourers'; equip = 'Spades, pickaxe, soil bags'; time = '3–4 hours'; price = '₹1,400';
+      } else if(low.includes('paint')){
+        cat = 'Painting'; workers = '2 painters'; equip = 'Rollers, brushes, drop sheets'; time = '1–2 days'; price = '₹2,800 + materials';
+      } else if(low.includes('move') || low.includes('shift') || low.includes('furniture')){
+        cat = 'Home shifting'; workers = '3 movers + 1 driver'; equip = 'Mini truck, packing materials'; time = 'Half day'; price = '₹3,200';
+      } else if(low.includes('tap') || low.includes('pipe') || low.includes('leak') || low.includes('plumb')){
+        cat = 'Plumbing repair'; workers = '1 plumber'; equip = 'Standard plumbing toolkit'; time = '1–2 hours'; price = '₹450';
+      } else if(low.includes('electric') || low.includes('wiring') || low.includes('fan') || low.includes('switch')){
+        cat = 'Electrical work'; workers = '1 electrician'; equip = 'Multimeter, wiring kit'; time = '1–3 hours'; price = '₹600';
+      } else if(low.includes('clean') || low.includes('maid') || low.includes('cook')){
+        cat = 'Domestic help'; workers = '1 domestic worker'; equip = 'Provided by household'; time = 'As scheduled'; price = '₹450/day';
+      } else {
+        cat = 'General labour (needs review)'; workers = '1–2 labourers (est.)'; equip = 'Basic toolkit'; time = 'Half day (est.)'; price = '₹800 (est.)';
+      }
     }
+
+    btn.disabled = false;
+    btn.textContent = 'Get instant estimate';
 
     document.getElementById('outCat').textContent = cat;
     document.getElementById('outWorkers').textContent = workers;
@@ -685,7 +689,7 @@
     document.getElementById('outPrice').textContent = price;
     out.classList.add('show');
 
-    currentEstimate = { description: document.getElementById('jobInput').value.trim(), category: cat, workers, equip, price };
+    currentEstimate = { description: input, category: cat, workers, equip, price };
     document.getElementById('dispatchForm').classList.remove('show');
   }
 
