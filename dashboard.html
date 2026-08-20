@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Kaamgar</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#16223B; --yellow:#F2B705; --rust:#C1502E; --concrete:#8B8680; --cream:#FAF7F0; --paper:#F1EDE3; --line:#D8D3C6; --good:#2E7D4F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--cream); color:var(--navy); font-family:'Inter',sans-serif; line-height:1.5;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 24px 80px;}
+  header{background:var(--navy); padding:20px 0; margin-bottom:36px;}
+  .header-inner{max-width:960px; margin:0 auto; padding:0 24px; display:flex; justify-content:space-between; align-items:center;}
+  .logo{display:flex; align-items:center; gap:10px;}
+  .logo-mark{width:30px; height:30px; background:var(--yellow); border-radius:4px; display:flex; align-items:center; justify-content:center; color:var(--navy); font-family:'Barlow Condensed'; font-weight:800;}
+  .logo-text{font-family:'Barlow Condensed'; font-weight:700; font-size:20px; color:var(--cream); text-transform:uppercase;}
+  .header-links a{color:rgba(250,247,240,0.75); text-decoration:none; font-size:13px; font-weight:600; margin-left:20px;}
+  h1{font-family:'Barlow Condensed'; font-weight:800; font-size:32px; text-transform:uppercase; margin-bottom:6px;}
+  .sub{color:var(--concrete); font-size:14px; margin-bottom:30px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:12px;}
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:8px;}
+  .card-title{font-weight:700; font-size:15px;}
+  .card-sub{color:var(--concrete); font-size:13px; margin-top:2px;}
+  .badge{font-size:11px; font-weight:700; padding:4px 10px; border-radius:100px; text-transform:capitalize; white-space:nowrap;}
+  .badge-requested, .badge-new{background:rgba(242,183,5,0.15); color:#8a6800;}
+  .badge-confirmed, .badge-invited{background:rgba(46,125,79,0.12); color:var(--good);}
+  .badge-completed, .badge-verified{background:rgba(46,125,79,0.2); color:var(--good);}
+  .badge-cancelled, .badge-rejected{background:rgba(193,80,46,0.12); color:var(--rust);}
+  .badge-pending, .badge-in_progress{background:rgba(22,34,59,0.08); color:var(--navy);}
+  .meta-row{font-size:12.5px; color:var(--concrete); margin-top:8px;}
+  .empty{color:var(--concrete); font-size:14px; padding:20px 0;}
+  .section-title{font-family:'Barlow Condensed'; font-weight:700; font-size:20px; text-transform:uppercase; margin:32px 0 14px; color:var(--rust);}
+  select.status-select{font-family:'Inter'; font-size:12px; font-weight:600; padding:5px 8px; border-radius:6px; border:1px solid var(--line);}
+  .login-prompt{text-align:center; padding:80px 20px;}
+  .login-prompt a{display:inline-block; margin-top:16px; background:var(--navy); color:var(--cream); text-decoration:none; padding:12px 24px; border-radius:8px; font-weight:700; font-size:14px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo"><div class="logo-mark">K</div><div class="logo-text">Kaamgar</div></div>
+    <div class="header-links">
+      <a href="index.html">Home</a>
+      <a href="#" onclick="handleLogout(event)">Log Out</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="loadingState" class="empty">Loading your dashboard…</div>
+
+  <div id="loginPrompt" class="login-prompt" style="display:none;">
+    <h1>Log in to see your dashboard</h1>
+    <p class="sub">Track your job requests, bookings, or worker application here.</p>
+    <a href="login.html">Log In / Sign Up</a>
+  </div>
+
+  <div id="dashboardContent" style="display:none;">
+    <h1 id="dashTitle">Your Dashboard</h1>
+    <p class="sub" id="dashSub"></p>
+
+    <!-- CUSTOMER VIEW -->
+    <div id="customerView" style="display:none;">
+      <div class="section-title">Your Bookings</div>
+      <div id="bookingsList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- WORKER VIEW -->
+    <div id="workerView" style="display:none;">
+      <div class="section-title">Your Application Status</div>
+      <div id="workerAppStatus"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div id="adminView" style="display:none;">
+      <div class="section-title">New Job Requests</div>
+      <div id="adminJobRequests"><div class="empty">Loading…</div></div>
+
+      <div class="section-title">Worker Applications</div>
+      <div id="adminWorkerApps"><div class="empty">Loading…</div></div>
+
+      <div class="section-title">All Bookings</div>
+      <div id="adminBookings"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== SUPABASE CONNECTION =====
+  const SUPABASE_URL = "https://vyxkeoujbwukdlzlaiad.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_RkjM59RJTjzI3fPlIWMk_g_jAcJXlYt";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let currentUser = null;
+  let currentProfile = null;
+
+  // Runs on page load: checks who's logged in, loads their profile,
+  // then shows the right dashboard view for their role (customer/worker/admin).
+  async function init(){
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session){
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('loginPrompt').style.display = 'block';
+      return;
+    }
+    currentUser = session.user;
+
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = profile;
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('dashboardContent').style.display = 'block';
+
+    const name = profile?.full_name || currentUser.email;
+    document.getElementById('dashTitle').textContent = `Welcome, ${name.split(' ')[0]}`;
+
+    if(profile?.role === 'admin'){
+      document.getElementById('dashSub').textContent = 'Staff view — all live activity across the platform.';
+      document.getElementById('adminView').style.display = 'block';
+      loadAdminData();
+    } else if(profile?.role === 'worker'){
+      document.getElementById('dashSub').textContent = 'Track the status of your registration.';
+      document.getElementById('workerView').style.display = 'block';
+      loadWorkerStatus();
+    } else {
+      document.getElementById('dashSub').textContent = 'Track the jobs you\'ve booked.';
+      document.getElementById('customerView').style.display = 'block';
+      loadCustomerBookings();
+    }
+  }
+
+  async function handleLogout(e){
+    e.preventDefault();
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
+  }
+
+  // ----- CUSTOMER: their own bookings, with the hired worker's details joined in -----
+  async function loadCustomerBookings(){
+    const el = document.getElementById('bookingsList');
+    const { data, error } = await sb
+      .from('bookings')
+      .select('*, workers(name, trade, day_rate)')
+      .eq('customer_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if(error || !data || data.length === 0){
+      el.innerHTML = '<div class="empty">No bookings yet — browse workers on the homepage to hire someone.</div>';
+      return;
+    }
+
+    el.innerHTML = data.map(b => `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${b.workers?.name || 'Worker'} — ${b.workers?.trade || ''}</div>
+            <div class="card-sub">${b.job_description}</div>
+          </div>
+          <span class="badge badge-${b.status}">${b.status.replace('_',' ')}</span>
+        </div>
+        <div class="meta-row">Scheduled: ${b.scheduled_date || '—'} · Requested ${new Date(b.created_at).toLocaleDateString()}</div>
+      </div>
+    `).join('');
+  }
+
+  // ----- WORKER: match their application by phone number (best-effort, since
+  // worker_applications isn't linked to an auth account at submission time) -----
+  async function loadWorkerStatus(){
+    const el = document.getElementById('workerAppStatus');
+    if(!currentProfile?.phone){
+      el.innerHTML = '<div class="empty">We couldn\'t find a matching application. If you already applied, contact us with the phone number you used.</div>';
+      return;
+    }
+
+    const { data, error } = await sb
+      .from('worker_applications')
+      .select('*')
+      .eq('phone', currentProfile.phone)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if(error || !data || data.length === 0){
+      el.innerHTML = `<div class="empty">No application found yet for this phone number. <a href="index.html#worker-cta">Register your interest here</a>.</div>`;
+      return;
+    }
+
+    const app = data[0];
+    const statusText = {
+      new: 'Received — we\'ll be in touch to invite you to an office for verification.',
+      invited: 'You\'ve been invited to visit an office for verification.',
+      verified: 'Verified! You should now appear on the platform for customers to hire.',
+      rejected: 'Not approved at this time.',
+    };
+
+    el.innerHTML = `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${app.trade} — ${app.city}</div>
+            <div class="card-sub">${statusText[app.status] || app.status}</div>
+          </div>
+          <span class="badge badge-${app.status}">${app.status}</span>
+        </div>
+        <div class="meta-row">Applied ${new Date(app.created_at).toLocaleDateString()}</div>
+      </div>
+    `;
+  }
+
+  // ----- ADMIN: everything, with quick status-change dropdowns -----
+  async function loadAdminData(){
+    loadAdminJobRequests();
+    loadAdminWorkerApps();
+    loadAdminBookings();
+  }
+
+  async function loadAdminJobRequests(){
+    const el = document.getElementById('adminJobRequests');
+    const { data, error } = await sb.from('job_requests').select('*').order('created_at', { ascending: false }).limit(20);
+    if(error || !data || data.length === 0){ el.innerHTML = '<div class="empty">No job requests yet.</div>'; return; }
+    el.innerHTML = data.map(r => `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${r.customer_name} — ${r.city || '—'}</div>
+            <div class="card-sub">${r.description}</div>
+            <div class="card-sub">${r.category} · ${r.workers_needed} · ${r.estimated_price}</div>
+          </div>
+          <select class="status-select" onchange="updateStatus('job_requests','${r.id}',this.value, loadAdminJobRequests)">
+            ${['pending','confirmed','dispatched','completed','cancelled'].map(s => `<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="meta-row">${r.customer_phone} · ${new Date(r.created_at).toLocaleString()}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadAdminWorkerApps(){
+    const el = document.getElementById('adminWorkerApps');
+    const { data, error } = await sb.from('worker_applications').select('*').order('created_at', { ascending: false }).limit(20);
+    if(error || !data || data.length === 0){ el.innerHTML = '<div class="empty">No worker applications yet.</div>'; return; }
+    el.innerHTML = data.map(a => `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${a.name} — ${a.trade}</div>
+            <div class="card-sub">${a.city} · ${a.phone}</div>
+          </div>
+          <select class="status-select" onchange="updateStatus('worker_applications','${a.id}',this.value, loadAdminWorkerApps)">
+            ${['new','invited','verified','rejected'].map(s => `<option value="${s}" ${s===a.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="meta-row">Applied ${new Date(a.created_at).toLocaleString()}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadAdminBookings(){
+    const el = document.getElementById('adminBookings');
+    const { data, error } = await sb.from('bookings').select('*, workers(name, trade)').order('created_at', { ascending: false }).limit(20);
+    if(error || !data || data.length === 0){ el.innerHTML = '<div class="empty">No bookings yet.</div>'; return; }
+    el.innerHTML = data.map(b => `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${b.workers?.name || 'Worker'} — ${b.workers?.trade || ''}</div>
+            <div class="card-sub">${b.job_description}</div>
+          </div>
+          <select class="status-select" onchange="updateStatus('bookings','${b.id}',this.value, loadAdminBookings)">
+            ${['requested','confirmed','in_progress','completed','cancelled'].map(s => `<option value="${s}" ${s===b.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="meta-row">Scheduled ${b.scheduled_date || '—'} · Requested ${new Date(b.created_at).toLocaleString()}</div>
+      </div>
+    `).join('');
+  }
+
+  // Generic status-updater used by all three admin dropdowns above
+  async function updateStatus(table, id, newStatus, reloadFn){
+    const { error } = await sb.from(table).update({ status: newStatus }).eq('id', id);
+    if(error){ alert('Could not update status — please try again.'); console.error(error); }
+    reloadFn();
+  }
+
+  init();
+</script>
+</body>
+</html>
